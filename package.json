@@ -9,7 +9,7 @@
     "dev": "tsc && node ./dist/src/index.js",
     "test": "npm run build && jest --verbose --runInBand",
     "clean": "rimraf dist/",
-    "copy-files": "copyfiles \"src/static/Track Import Test.xlsx\" dist/",
+    "copy-files": "copyfiles src/static/*.xlsx dist/",
     "build": "npm run clean && tsc && npm run copy-files"
   },
   "repository": {
