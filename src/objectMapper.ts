@@ -1,27 +1,39 @@
-import { catchAndSaveGenericError, catchAndSaveRowParseError } from "./errorManager.js";
+import { catchAndSaveRowParseError } from "./errorManager.js";
+import mongoose from "mongoose";
 import { findContract } from "./mongoHelper.js";
 
 /**
- * This method will take a 2D array of track data rows and pass them all to the parseTrack method and await
+ * This method will take a 2D array of track data rows and a contract model and pass them all to the parseTrack method and await
  * the returned promises. In order to return a clean array of valid tracks to insert the undefined tracks are
  * filtered out before returning
  * @param trackData The 2D array containing track data rows
+ * @param contractModel The contractModel used for searching
  * @returns An array of track schema valid objects to be inserted into the DB
  */
-export const parseTrackRows = async (trackData: string[][]) => {
-    const trackObjects = Promise.all(trackData.map(parseTrack));
+export const parseTrackRows = async (trackData: string[][], contractModel: mongoose.Model<any>) => {
+    const trackObjects = Promise.all(trackData.map((trackData, index) => {
+        return parseTrack(trackData, index, contractModel);
+    }));
     return (await trackObjects).filter(track => track !== undefined);
 };
 
-export const parseTrack = async (trackData: string[], index: number) => {
+export const parseTrack = async (trackData: string[], index: number, contractModel: mongoose.Model<any>) => {
     // NB: This error message is causing issues when the contract name is not present as it is assuming
     // the end of the array is at index 6. This would require a lot of effort to fix in my opinion so I am 
-    // leaving this commented out.
+    // leaving this commented out for now and coming back to it if I have time.
     
     // if (trackData.length !== 8) {
     //     catchAndSaveGenericError(`Track on row ${index + 1} has incorrect number of columns.`);
     //     return undefined;
     // }
+    if (!trackData[1]) {
+        catchAndSaveRowParseError(`Track on row ${index + 1} has no title.`, index + 1);
+        return undefined;
+    };
+    if (!trackData[4]) {
+        catchAndSaveRowParseError(`Track on row ${index + 1} has no ISRC.`, index + 1);
+        return undefined;
+    };
 
     const trackId = trackData[0];
     const trackTitle = trackData[1];
@@ -34,7 +46,7 @@ export const parseTrack = async (trackData: string[], index: number) => {
     let trackContractId;
     // If a contract name exists
     if (trackData[7]) {
-        const contract = await findContract({ Name: trackData[7]});
+        const contract = await findContract(contractModel, { Name: trackData[7]});
 
         // If a valid contract is returned
         if (contract) {
@@ -44,15 +56,6 @@ export const parseTrack = async (trackData: string[], index: number) => {
             catchAndSaveRowParseError(`Track row ${index + 1}, no contract exists with contract name ${trackData[7]}.`, index + 1);
             return undefined;
         };
-    };
-
-    if (!trackTitle) {
-        catchAndSaveRowParseError(`Track on row ${index + 1} has no title.`, index + 1);
-        return undefined;
-    };
-    if (!trackISRC) {
-        catchAndSaveRowParseError(`Track on row ${index + 1} has no ISRC.`, index + 1);
-        return undefined;
     };
 
     return {

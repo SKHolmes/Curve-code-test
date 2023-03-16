@@ -1,6 +1,6 @@
 import { getDataFromLocalXLSX } from './dataParser.js';
-import { catchAndSaveGenericError } from './errorManager.js';
-import { closeConnection, connectToLocalMongo, createAndSaveContract, createAndSaveTrack, createSchemaModels } from './mongoHelper.js';
+import { catchAndSaveGenericError, printErrors } from './errorManager.js';
+import { closeConnection, connectToLocalMongo, createAndSaveModel, createSchemaModels } from './mongoHelper.js';
 import { parseTrackRows } from './objectMapper.js';
 
 main();
@@ -8,20 +8,24 @@ main();
 export async function main() {
     await connectToLocalMongo();
 
-    createSchemaModels();
+    const { Contract, Track } = createSchemaModels();
 
-    await createAndSaveContract({
+    await createAndSaveModel(Contract, {
         Name: 'Contract 1'
     });
 
     const trackData = await getDataFromLocalXLSX();
     
-    const trackObjects = await parseTrackRows(trackData);
+    const trackObjects = await parseTrackRows(trackData, Contract);
 
-    await Promise.all(trackObjects.map(createAndSaveTrack))
+    await Promise.all(trackObjects.map((trackObject) => {
+        return createAndSaveModel(Track, trackObject);
+    }))
     .catch(catchAndSaveGenericError);
 
     await closeConnection();
+
+    printErrors();
 };
 
 

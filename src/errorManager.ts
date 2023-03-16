@@ -1,4 +1,4 @@
-const errors: GenericError[] = [];
+export const errors: GenericError[] = [];
 
 interface GenericError {
     errorMessage: any,
@@ -10,7 +10,7 @@ interface GenericError {
  */
 export const printErrors = () => {
     console.log(`Found ${errors.length} error${errors.length === 1 ? '' : 's'}`);
-    errors.forEach(prettyPrintError);
+    console.log(errors);
 };
 
 /**

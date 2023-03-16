@@ -2,9 +2,6 @@ import mongoose, { Schema } from "mongoose";
 import { CONTRACT_SCHEMA, MONGO_CONNECTION_STRING, TRACK_SCHEMA } from "./constants.js";
 import { catchAndSaveGenericError, printErrors } from "./errorManager.js";
 
-let contractModel: mongoose.Model<any>;
-let trackModel: mongoose.Model<any>;
-
 /**
  * Attempt to connect to out local running MongoDB instance, if we fail to connect we
  * want to let the error propoate and runtime to fail so we do not catch it.
@@ -15,36 +12,27 @@ export const connectToLocalMongo = async () => {
     console.log('Connected!');
 };
 
-export const createSchemaModels = () => {
+export const createSchemaModels = (): { Contract: mongoose.Model<any>, Track: mongoose.Model<any> } => {
     const contractSchema = new Schema(CONTRACT_SCHEMA);
     const trackSchema = new Schema(TRACK_SCHEMA);
 
     const Contract = mongoose.model('Contract', contractSchema);
     const Track = mongoose.model('Track', trackSchema);
     
-    contractModel = Contract;
-    trackModel = Track;
+    return { Contract, Track };
 };
 
-export const createAndSaveContract = async (data: any) => {
-    const contract = new contractModel(data);
+export const createAndSaveModel = async (Model: mongoose.Model<any>, data: any) => {
+    const model = new Model(data);
 
-    await contract.save()
+    await model.save()
     .catch(catchAndSaveGenericError);
 };
 
-export const createAndSaveTrack = async (data: any) => {
-    const track = new trackModel(data);
-
-    await track.save()
-    .catch(catchAndSaveGenericError);
-};
-
-export const findContract = async (data: any) => {
+export const findContract = async (contractModel: mongoose.Model<any>, data: any) => {
     return await contractModel.findOne(data).exec();
 };
 
 export const closeConnection = async () => {
     await mongoose.connection.close();
-    printErrors();
 };

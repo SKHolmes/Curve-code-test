@@ -13,7 +13,6 @@ import { FILE_NAME } from "./constants.js";
  */
 export const getDataFromLocalXLSX = async () => {
     const testFile = xlsx.parse(createTestFilePath());
-    console.log(testFile[0].data)
     return testFile[0].data.slice(2) as string[][];
 };
 
